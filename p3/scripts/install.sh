@@ -20,6 +20,32 @@ else
     echo "    -> Docker already installed."
 fi
 
+# Ensure docker group exists and add user
+if getent group docker >/dev/null; then
+    echo "    -> docker group exists."
+else
+    sudo groupadd docker
+fi
+
+if id -nG "$USER" | grep -qw docker; then
+    echo "    -> User already in docker group."
+else
+    sudo usermod -aG docker "$USER"
+    echo "    -> Added $USER to docker group."
+fi
+
+# Check if the current shell can use docker without sudo
+if docker ps >/dev/null 2>&1; then
+    echo "    -> Docker is usable without sudo in this shell."
+else
+    echo ""
+    echo "    [WARNING] Docker is NOT usable without sudo in this shell."
+    echo "    You MUST log out and log back in (or reboot) before running setup.sh."
+    echo "    Do NOT continue until 'docker ps' works without sudo."
+    echo ""
+    exit 1
+fi
+
 echo "==> [2/4] Installing k3d..."
 if ! command -v k3d &>/dev/null; then
     curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
